@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	#drawing {
+		width: 500px;
+		height: 500px;
+		border:1px solid;
+		position: relative;
+	}
+
+	.box {
+		position: absolute;
+		border: 1px solid grey; 
+	}
+</style>
+</head>
+<body>
+	starting point<br/>
+	x:<input type="text" value="" id="sxv"> size:<input type="text" value="" id="msize"><br/>
+	y:<input type="text" value="" id="syv"> number:<input type="text" value="" id="onumber"><br/>
+	ending point<br/>
+	x:<input type="text" value="" id="exv"><br/>
+	y:<input type="text" value="" id="eyv"><br/>
+	
+	<button type="button" onclick="drawOriginal()">DRAW</button>
+	<button type="button" onclick="clearing()">CLEAR</button>
+	<div id="drawing">		
+	</div>	
+</body>
+
+<script type="text/javascript">	
+
+	function navigation(x, y, n, d_x, d_y, M1, copyMap){
+		
+		var graph = initMatrix(n);
+		
+		//drawMap(M1);
+		var open = initMatrix(n);
+		var close = initMatrix(n);
+		var dis = initMatrix(n);		
+		var p = new Array();		
+		
+		//
+		var times = 0;
+		while (true) {
+			
+			if(destination(dis, d_x, d_y)) {
+				break;
+			}
+			
+				
+			nextStep(x, y, open, close, M1, dis, d_x, d_y, copyMap);
+			//print02(dis, M1);
+			
+			
+			p = find(dis, d_x, d_y);
+			
+			//
+			x = p[0];
+			y = p[1];
+			times++;
+			//System.out.println("running for " + times);			
+		}
+		//
+		map(graph, dis);
+		drawMap(open);
+		
+		return graph;
+	}
+	
+	//
+	function findPath(ox, oy, graph) {
+		graph[ox][oy] = -2;
+		
+		var cl = nextLevel(ox, oy, graph);
+		
+		for (var i = 0; i < cl.length; i++) {
+			for (var j = 0; j < cl.length; j++) {
+				if(cl[i][j] == 0) {
+					//System.out.println("(" + i + ", " + j + ")");
+				}
+			}
+		}
+		return cl;
+	}
+	
+	//
+	function nextLevel(ox, oy, graph){
+		var n = graph.length;
+		var number = n+2;
+		var cl = initMatrix(number);
+		for (var i = 0; i < cl.length; i++) {
+			cl[i] = new Array();
+			for (var j = 0; j < cl.length; j++) {
+				cl[i][j] = -1;
+			}
+		}
+		
+		
+		for (var i = ox-1; i < ox+2; i++) {
+			for (var j = oy-1; j < oy+2; j++) {
+				if(isExist(i, j, n)) {
+					if(graph[i][j] == -1) {
+						graph[i][j] = -2;
+						cl[i][j] = 0;
+					}
+				}
+			}
+		}
+		
+		return cl;
+	}
+	
+	function map(graph, dis) {
+		for (var i = 0; i < dis.length; i++) {
+			
+			for (var j = 0; j < dis.length; j++) {
+				
+				if(dis[i][j] == -1) {
+					graph[i][j] = -1;
+				}
+			}
+		}		
+	}
+	
+	function destination(dis, d_x, d_y) {
+		
+		if(dis[d_x][d_y] == -1) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	function find(dis, d_x, d_y) {	
+		
+		var p = new Array();
+		var min = 1000;		
+		var flag = false;
+		
+		for (var i = 0; i < dis.length; i++) {
+			
+			for (var j = 0; j < dis.length; j++) {
+				
+				if (dis[i][j] > 0 && min >= dis[i][j]) {
+					
+					min = dis[i][j];
+					
+					p[0] = i;
+					p[1] = j;
+					flag = true;
+				}
+								
+				//
+				
+				if(flag){
+					var d1 = distance(p[0], p[1], d_x, d_y);
+					var d2 = distance(i, j, d_x, d_y);
+					//drawMap(dis);
+					//alert(d1);
+					if(min == dis[i][j] && d1 > d2) {
+						min = dis[i][j];
+						p[0] = i;
+						p[1] = j;
+					}
+				}
+			}
+			
+		}
+		
+		return p;
+	}
+	
+	function nextStep(x, y, open, close, barrier, dis, d_x, d_y, copyMap) {
+		updateM(x, y, close);
+		
+		var n = open.length;
+		var previous = open[x][y];
+		
+		//
+		var flag0 = false;
+		var flag1 = false;
+		var flag2 = false;
+		var flag3 = false;
+		//
+		if (isExist(x, y - 1, n) && barrier[x][y-1] == -1) {
+			flag0 = true;
+		}
+		if (isExist(x - 1, y, n) && barrier[x-1][y] == -1) {
+			flag1 = true;
+		}
+		if (isExist(x + 1, y, n) && barrier[x+1][y] == -1) {
+			flag2 = true;
+		}
+		if (isExist(x, y + 1, n) && barrier[x][y+1] == -1) {
+			flag3 = true;
+		}
+		//
+		
+		// x-1, y-1
+		if (isExist(x - 1, y - 1, n)) {
+			if (isVisit(x - 1, y - 1, open, close, barrier)) {
+			
+				if(flag0 && flag1){
+					
+				}else
+					open[x - 1][y - 1] = previous + 1;
+				//
+				
+				if(flag0 && flag1){
+					
+				}else if(copyMap[x - 1][y - 1] == -1)
+					updateCopy(x - 1, y - 1, copyMap, previous, barrier);
+			}
+		}
+		// x-1, y
+		if (isExist(x - 1, y, n)) {
+			if (isVisit(x - 1, y, open, close, barrier)) {
+				open[x - 1][y] = previous + 1;
+				//
+								
+				if(copyMap[x - 1][y] == -1)
+					updateCopy(x - 1, y, copyMap, previous, barrier);
+			}
+		}
+		// x-1, y+1
+		if (isExist(x - 1, y + 1, n)) {
+			if (isVisit(x - 1, y + 1, open, close, barrier)) {
+				if(flag1 && flag3){
+					
+				}else
+					open[x - 1][y + 1] = previous + 1;
+				//
+				
+				if(flag1 && flag3){
+					
+				}else if(copyMap[x - 1][y + 1] == -1)
+					updateCopy(x - 1, y + 1, copyMap, previous, barrier);
+			}
+		}
+		// x, y-1
+		if (isExist(x, y - 1, n)) {
+			if (isVisit(x, y - 1, open, close, barrier)) {
+				open[x][y - 1] = previous + 1;
+				//
+				if(copyMap[x][y-1] == -1)
+					updateCopy(x, y-1, copyMap, previous, barrier);
+			}
+		}
+		// x, y+1
+		if (isExist(x, y + 1, n)) {
+			if (isVisit(x, y + 1, open, close, barrier)) {
+				open[x][y + 1] = previous + 1;
+				//
+				if(copyMap[x][y + 1] == -1)
+					updateCopy(x, y + 1, copyMap, previous, barrier);
+			}
+		}
+		// x+1,y-1
+		if (isExist(x + 1, y - 1, n)) {
+			if (isVisit(x + 1, y - 1, open, close, barrier)) {
+				if(flag0 && flag2){
+					
+				}else 
+					open[x + 1][y - 1] = previous + 1;
+				//
+				if(flag0 && flag2){
+					
+				}else if(copyMap[x + 1][y-1] == -1)
+					updateCopy(x + 1, y - 1, copyMap, previous, barrier);
+			}
+		}
+		// x+1, y
+		if (isExist(x + 1, y, n)) {
+			if (isVisit(x + 1, y, open, close, barrier)) {
+				open[x + 1][y] = previous + 1;
+				//
+				if(copyMap[x + 1][y] == -1)
+					updateCopy(x + 1, y, copyMap, previous, barrier);
+			}
+		}
+		// x+1, y+1
+		if (isExist(x + 1, y + 1, n)) {
+			if (isVisit(x + 1, y + 1, open, close, barrier)) {
+				if(flag2 && flag3){
+					
+				}else 
+					open[x + 1][y + 1] = previous + 1;
+				
+				//
+				if(flag2 && flag3){
+					
+				}else if(copyMap[x + 1][y + 1] == -1)
+					updateCopy(x + 1, y + 1, copyMap, previous, barrier);
+			}
+		}
+
+		open[x][y] = 0;
+		dis[x][y] = -1;
+		//
+		
+		updateDis(open, dis, d_x, d_y);		
+	}
+	
+	function updateCopy(x, y, copyMap, previous, barrier){
+		
+		var n = barrier.length;
+		var flag0 = false;
+		var flag1 = false;
+		var flag2 = false;
+		var flag3 = false;
+		//
+		if (isExist(x, y - 1, n)) {
+			if(barrier[x][y-1] == -1)
+				flag0 = true;
+		}
+		if (isExist(x - 1, y, n)) {
+			if(barrier[x-1][y] == -1)
+				flag1 = true;
+		}
+		if (isExist(x + 1, y, n)) {
+			if(barrier[x+1][y] == -1)
+				flag2 = true;
+		}
+		if (isExist(x, y + 1, n)) {
+			if(barrier[x][y+1] == -1)
+				flag3 = true;
+		}
+		
+		
+		var min = previous;
+		
+		for (var i = x-1; i < x+2; i++) {
+			for (var j = y-1; j < y+2; j++) {
+				if(isExist(i, j, copyMap.length)){
+					
+					if(i == x - 1 && j == y - 1){
+						if(flag0 && flag1){
+							continue;
+						}
+					}else if(i == x + 1 && j == y - 1){
+						if(flag0 && flag2){
+							continue;
+						}
+					}else if(i == x - 1 && j == y + 1){
+						if(flag1 && flag3){
+							continue;
+						}
+					}else if(i == x + 1 && j == y + 1){
+						if(flag2 && flag3){
+							continue;
+						}
+					}
+					
+					if(copyMap[i][j] != -1 && min > copyMap[i][j]){
+						min = copyMap[i][j];
+					}
+				}				
+			}
+		}
+		
+		
+		//alert();
+		copyMap[x][y] = min + 1;
+		
+	}
+	
+	function updateDis(open, dis, d_x, d_y) {
+		for (var i = 0; i < dis.length; i++) {
+			for (var j = 0; j < dis.length; j++) {
+				if (open[i][j] > 0)
+					dis[i][j] = open[i][j] + distance(i, j, d_x, d_y);
+			}
+		}
+
+	}
+	
+	function distance(x, y, d_x, d_y) {
+		if (x == d_x) {
+			return Math.abs(y - d_y);
+		}
+		if (y == d_y) {
+			return Math.abs(x - d_x);
+		}
+
+		var h = Math.abs(x - d_x);
+		var v = Math.abs(y - d_y);
+		if (h < v) {
+			if(x > d_x) {
+				x = x - h;
+			}else {
+				x = x + h;
+			}
+			if(y > d_y) {
+				y = y - h;
+			}else {
+				y = y + h;
+			}
+			
+			return h + distance(x, y, d_x, d_y);
+		}
+		
+		
+		if(x > d_x) {
+			x = x - v;
+		}else {
+			x = x + v;
+		}
+		if(y > d_y) {
+			y = y - v;
+		}else {
+			y = y + v;
+		}
+		return v + distance(x, y, d_x, d_y);
+	}
+	
+	function isExist(x, y, n){
+		if (x < 0 || x >= n) {
+			return false;
+		}
+		if (y < 0 || y >= n) {
+			return false;
+		}
+
+		return true;		
+	}
+	
+	function isVisit(x, y, open, close, barrier) {
+		if (open[x][y] != 0) {
+			return false;
+		}
+		// in close list
+		if (close[x][y] == -1) {
+			return false;
+		}
+		// in barrier
+		if (barrier[x][y] == -1) {
+			return false;
+		}
+
+		return true;
+	}
+	
+	function updateM(x, y, M) {
+		M[x][y] = -1;
+	}
+	
+	function barrier(n, obstacleNumber){
+		var arr = initMatrix(n);
+		//var obstacleNumber = n * 1;
+		
+		for(var i=0;i<obstacleNumber;i++){
+			var x = Math.floor(Math.random()*n);
+			var y = Math.floor(Math.random()*n);
+			
+			
+			arr[x][y] = -1;
+		}
+		return arr;
+	}
+	
+	function initMatrix(n){
+		//var n = 10;
+		var arr=new Array();
+		for(var i=0;i<n;i++){
+			arr[i] = new Array();
+			for(var j=0;j<n;j++){
+				arr[i][j] = 0;
+			}
+		}
+		
+		return arr;
+	}
+	
+	function drawMap(arr){		
+		var px = 0;
+		var py = 0;
+		var str = "";
+
+		var n = arr.length;
+		for(var i=0;i<n;i++){
+			for(var j=0;j<n;j++){
+				px = 25 * i;
+				py = 25 * j;
+				
+				//
+				if(arr[i][j] == 0){
+					str = str + "<div class='box' style='width:24px;height:24px;left: " + px + "px;top: " + py + "px;" 
+					+ "background-color: #00FFFF;" + " '>" 
+					//+ arr[i][j] 
+					+ "</div>";
+				}else if(arr[i][j] == -1){
+					str = str + "<div class='box' style='width:24px;height:24px;left: " + px + "px;top: " + py + "px;" 
+					+ "background-color: red;" + " '>" 
+					//+ arr[i][j] 
+					+ "</div>";
+				}else if(arr[i][j] == -2){
+					str = str + "<div class='box' style='width:24px;height:24px;left: " + px + "px;top: " + py + "px;" 
+					+ "background-color: pink;" + " '>" 
+					//+ arr[i][j] 
+					+ "</div>";
+				}else{
+					str = str + "<div class='box' style='width:24px;height:24px;left: " + px + "px;top: " + py + "px;" 
+					+ "background-color: yellow;" + " '>" 
+					//+ arr[i][j] 
+					+ "</div>";
+				}
+				
+			}
+		}
+		
+		var drawdiv = document.getElementById("drawing");
+		drawdiv.innerHTML=str;
+	}
+	
+	var size = 16;
+	var M1 = barrier(size, 10);
+	
+	function start(scale){
+		
+		var sxv = document.getElementById("sxv").value;
+		var syv = document.getElementById("syv").value;
+		var exv = document.getElementById("exv").value;
+		var eyv = document.getElementById("eyv").value;
+		
+		var n = scale;
+		var dx = parseInt(sxv);
+		var dy = parseInt(syv);
+		var x = parseInt(exv);
+		var y = parseInt(eyv);
+		
+		if(x > dx){
+			//alert("2");
+		}else{
+			x = dx;
+			y = dy;
+			dx = parseInt(exv);
+			dy = parseInt(eyv);
+			//alert("1");
+		}
+				
+		var copyMap = initMatrix(n);
+		for(var i=0;i<n;i++){
+			for(var j=0;j<n;j++){
+				copyMap[i][j] = -1;
+			}
+		}
+		copyMap[x][y] = 0;
+
+		var graph1 = navigation(x, y, n, dx, dy, this.M1, copyMap);
+		
+		//drawMap(copyMap);
+		var path = initMatrix(n);
+		path[x][y] = 6;
+		path[dx][dy] = 6;
+		
+		var ix = dx;
+		var iy = dy;
+		var en = copyMap[dx][dy] - 1;
+		
+		//path
+		for(;en>0;en--){
+			var ns = true;
+			var priority = true;
+			var tx = ix;
+			var ty = iy;
+			for(var i=0;i<n;i++){
+				for(var j=0;j<n;j++){
+					if(ns){
+						var smaller = distance(ix, iy, i, j);
+						if(copyMap[i][j] == en && smaller == 1){							
+							
+							if(i == ix || j == iy){
+								priority = false;
+							}
+							
+							tx = i;
+							ty = j;
+							ns = false;							
+							//continue;
+						}
+					}else if(priority){						
+						var smaller = distance(ix, iy, i, j);
+						if(copyMap[i][j] == en && smaller == 1){
+							if(i == ix || j == iy){
+								tx = i;
+								ty = j;
+								priority = false;
+								//alert(i + "," + j);
+							}
+						}						
+					}
+					
+				}
+			}
+			ix = tx;
+			iy = ty;
+			path[ix][iy] = -1;
+			
+		}
+		//alert(en);
+		
+		//barrier
+		for(var i=0;i<n;i++){
+			for(var j=0;j<n;j++){
+				if(this.M1[i][j] == -1){
+					path[i][j] = -2;
+					copyMap[i][j] = -2;
+				}
+			}
+		}
+		
+		drawMap(path);		
+		//drawMap(copyMap);
+	}
+	
+	function clearing(){
+		//alert();
+		window.location.reload();
+	}
+	
+	function original(size, obstacleNumber){
+		var startMap = initMatrix(size);
+		this.M1 = barrier(size, obstacleNumber);
+		
+		for(var i=0;i<size;i++){
+			for(var j=0;j<size;j++){
+				if(this.M1[i][j] == -1){
+					startMap[i][j] = -2
+				}
+			}
+		}		
+		drawMap(startMap);
+	}
+	
+	function drawOriginal(){
+		var msize = document.getElementById("msize");
+		var onumber = document.getElementById("onumber");
+		
+		var scale = parseInt(msize.value);
+		var on = parseInt(onumber.value);
+		alert(scale + ", " + on);
+		original(scale, on);
+	}
+		
+	var count = 0;
+	window.onload=function(){
+		document.onmousedown=function(ev){
+			var e = event || window.event;
+			
+			//alert('x: ' + e.clientX  + '\ny: ' + e.clientY + "\n" + count);
+			if(e.clientX > 10 && e.clientY > 165){
+				
+				var x = parseInt((e.clientX - 10)/25);
+				var y = parseInt((e.clientY - 175)/25);
+				
+				//alert('x: ' + x + '\ny: ' + y + "\n" + count);				
+				if(count % 2 == 0){
+					var sxv = document.getElementById("sxv");
+					var syv = document.getElementById("syv");
+					
+					sxv.value = x;
+					syv.value = y;
+					
+				}else{
+					var exv = document.getElementById("exv");
+					var eyv = document.getElementById("eyv");
+					
+					exv.value = x;
+					eyv.value = y;
+					
+					var msize = document.getElementById("msize");
+					var scale = parseInt(msize.value);
+					start(scale);
+				}
+				
+				count++;	
+			}  					
+		}
+	}  
+		
+</script>
+</html>
